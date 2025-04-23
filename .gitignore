@@ -83,10 +83,13 @@ dmypy.json
 profile_default/
 ipython_config.py
 
-# Ignore images and videos
+# Ignore images
 *.jpg
 *.jpeg
 *.png
+
+# not from the report_latex folder
+!report_latex/*.png
 
 # Ignore all content of the dataset folder
 dataset/
