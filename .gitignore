@@ -88,8 +88,9 @@ ipython_config.py
 *.jpeg
 *.png
 
-# not from the report_latex folder
-!report_latex/*.png
+# not from the report_latex folders
+!exploration/report_latex/*.png
+!classification/report2_latex/*.png
 
 # Ignore all content of the dataset folder
 dataset/
