@@ -12,6 +12,7 @@
 \usepackage{xcolor}         % colors
 \usepackage{float}
 \usepackage{graphicx}
+\usepackage{amsmath}
 
 \title{Classification Experiments Report 2025}
 
@@ -32,10 +33,10 @@
 
 \begin{contributions}
     \textcolor{gray}{
-    Aral \\
-    Linus \\
-    Sandro \\
-    Kevin \\
+    Aral: Labeling function, Evaluation, Experiments, RFC with MLC\\
+    Sandro: Formatted \& organized the latex report\\
+    Linus: Early classification experiments, created slides\\
+    Kevin: Experimented with classifiers \& analyzed plots
     }
   
   % \textcolor{gray}{E.g.: Tara Jadidi did the entire experimental setup, including the data-split and selection of features and pre-processing. Florian Schmid trained four different classifiers for the task, and Paul Primus was responsible for evaluating the classifiers, generating figures and writing the report.}
@@ -43,7 +44,6 @@
 
 \section{Labeling Function}
 We have selected the following files with multiple sound events to assess if the labeling functions could capture the intended classes:
-\\
 
 \textbf{677254.mp3:}
 This file was annotated three times with each annotation describing it as "A musical instrument similar to a piano is playing." The length of the annotated onset and offset varies for each annotation between 0.02 - 0.65, 9.43 - 26.51, and 2.18 - 4.15 seconds. The recording consists of two people playing saxophone and piano simultaneously. The labeling functions did capture the intended classes in the recording. The free text annotations do mention "piano" but the word "saxophone" is missing. However, it is worth mentioning that the original caption for this file uses the description "piano" (for a detailed graph see \autoref{fig1}). The labeled events were clearly audible in the recording.
@@ -66,11 +66,18 @@ This file was annotated five times with the descriptions "rhythmic drumming", "a
   \label{fig2}
 \end{figure}
 
-\textbf{TODO: 1b, 1c}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.75\linewidth]{pca.png}
+  \caption{PCA clustering for the classes of interest displaying a small amount of separability.}
+  \label{fig3}
+\end{figure}
 
 \section{Data Split}
 \label{sec:data_split}
-We have decided to use 80 \% of the data for training (so that the model has enough examples to generalize) with 10\% for validation (to reduce overfitting) and 10\% for testing (to estimate the model's unbiased performance). The training set was used for cross-validation and the validation set was used for fine-tuning the hyperparameters. The remaining 10\% was used to evaluate the model's performance.
+We have decided to use 80 \% of the data for training (so that the model has enough examples to generalize) with 10\% for validation (to reduce overfitting) and 10\% for testing (to estimate the model's unbiased performance). 
+
+The training set was used for cross-validation and the validation set was used for fine-tuning the hyperparameters. The remaining 10\% was used to evaluate the model's performance.
 
 Yes, there are potential risks for information leakage, namely, if the features in the training set are highly correlated with the labels of the test set, this could cause feature leakage. Avoiding to use features from the test set could prevent this type of leakage. 
 
@@ -87,44 +94,87 @@ During the initial phase of the project, we performed exploratory data analysis 
 \section{Evaluation}
 \label{sec:evaluation}
 To compare hyperparameter settings and evaluate our models, we use the balanced accuracy score. Since we are dealing with imbalanced data (not all classes are equally distributed), it prevents a model from getting a good score simply by favoring the majority class. 
-\\
-$$\text{Balanced Accuracy} = \frac{1}{2} \left(\frac{\mathrm{TP}}{\mathrm{TP} + \mathrm{FN}} + \frac{\mathrm{TN}}{\mathrm{TN} + \mathrm{FP}} \right)$$
-\\\\
-We implemented a simple baseline classifier that always predicts the majority class by default. \\ 
-For example, when asking if 'drums' occur in '231710.mp3' (see \ref{fig2}), the baseline predicts 0 because the label is inactive most of the time. Using plain accuracy this already achieves about 75\%, but this simply captures the imbalance between “no-drums” and “drums”. In contrast, balanced accuracy gives equal weight to the true-positive rate and the true-negative rate. This prevents a classifier from appearing strong merely by favoring the dominant class, getting a better evaluation when one class is less frequent.
+
+\begin{equation}
+\text{Balanced Accuracy} = \frac{1}{2} \left( \frac{\mathrm{TP}}{\mathrm{TP} + \mathrm{FN}} + \frac{\mathrm{TN}}{\mathrm{TN} + \mathrm{FP}} \right)
+\end{equation}
+
+\vspace{0.3cm}
+
+We implemented a simple baseline classifier that always predicts the majority class by default (see \autoref{tab:performance_metrics}). For example, when asking if 'drums' occur in '231710.mp3' (see \autoref{fig2}), the baseline predicts 0 because the label is inactive most of the time. Using plain accuracy this already achieves about 75\%, but this simply captures the imbalance between “no-drums” and “drums”. In contrast, balanced accuracy gives equal weight to the true-positive rate and the true-negative rate. This prevents a classifier from appearing strong merely by favoring the dominant class, getting a better evaluation when one class is less frequent.
+
+\vspace{0.3cm}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Metric}            & \textbf{Drums} & \textbf{Speech} \\ \hline
+Accuracy                   & 0.747          & 0.534           \\ \hline
+Weighted Accuracy          & 0.500          & 0.500           \\ \hline
+Precision                  & 0.000          & 0.000           \\ \hline
+Recall                     & 0.000          & 0.000           \\ \hline
+F1 Score                   & 0.000          & 0.000           \\ \hline
+ROC AUC                    & 0.500          & 0.500           \\ \hline
+PR AUC                     & 0.253          & 0.466           \\ \hline
+\end{tabular}
+\vspace{0.5cm}
+\caption{Performance Metrics for labels "Drums" and "Speech"}
+\label{tab:performance_metrics} % Label for referencing
+\end{table}
 
 \section{Experiments}
 \label{sec:experiments}
-To reduce computational efforts, we only use a subset of samples during hyperparameter tuning. This allows us to vary the values of parameters and compare the results to find a good combination, but keep the training time relatively low. For Classifiers with multiple parameters we perform a grid search using all possible combinations.
+To reduce computation times, we only used a subset of samples during hyperparameter tuning. This allows us to vary the values of parameters and compare the results to find a good combination, but keep the training time relatively low. For Classifiers with multiple parameters we perform a grid search using all possible combinations.
 
 \subsection{K-Nearest Neighbors Classifier}
 Because each sound event is either present or absent, we treat each label as its own binary classification task. We apply a K-nearest Neighbors (KNN) classifier independently to each label and run repeated evaluations to identify the best hyperparameters. In this setup, the number of $k$ neighbors is crucial: choosing $k$ too small makes the model too complex and prone to overfitting, while a very large $k$ leads to underfitting.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.30\linewidth]{knn_performance.png}
-  \caption{KNN accuracy for different k}
-  \label{fig_knn}
+  \includegraphics[width=0.60\linewidth]{knn_performance.png}
+  \caption{KNN accuracy for different k values}
+  \label{fig4}
 \end{figure}
 
-\subsection{Decision Tree}
-A Decision Tree is another straightforward approach for our binary classification tasks. Like with KNN, we perform a hyperparameter search to find the ideal settings. Increasing \textit{max\_depth} allows deeper nested decisions and improves the fit on the training data but also raises the risk of overfitting. To counteract that problem, we can also raise \textit{min\_samples\_split} and \textit{min\_samples\_split}, which forces each node or leaf to have a minimum number of samples before the split can occur. Despite this regularization, our best single-tree model still performs worse than the KNN on our noisy data. The peak balanced accuracy was only 0.28.
+\subsection{Decision Tree Classifier (DTC)}
+A Decision Tree is another straightforward approach for our binary classification tasks. Like with KNN, we perform a hyperparameter search to find the ideal settings. Increasing \textit{max\_depth} allows deeper nested decisions and improves the fit on the training data but also raises the risk of overfitting. To counteract that problem, we can also raise \textit{min\_samples\_split} and \textit{min\_samples\_split}, which forces each node or leaf to have a minimum number of samples before the split can occur. Despite this regularization, our best single-tree model still performs worse than the KNN on our noisy data. The peak balanced accuracy was only 0.28 (ranging from 0.23 to 0.28 max).
 
-\subsection{Random Forest Classifier with Multi-Label Classification}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.6\linewidth]{dtc.png}
+  \caption{Results of the DTC for the label "Thunder"}
+  \label{fig5}
+\end{figure}
+
+\subsection{Random Forest Classifier with Multi-Label Classification (MLC)}
 Since we have multiple classes in our data, we also evaluated a Random Forest classifier on all 58 labels and observed a significant improvement over both KNN and a single Decision Tree. Using 58 trees (\textit{n\_estimators=58}), a maximum depth of 30, min. samples per split of 10 and the “entropy” criterion, the model achieved a balanced accuracy score of 0.6472. This result shows that Random Forests combined with the Multi-Output Classifier works best with our data.\\
-These hyperparameters were then applied to train our final model on the full training dataset, and its predictions were evaluated across all classes. (see \ref{sec:analyzing_predictions})
+These hyperparameters were then applied to train our final model on the full training dataset, and its predictions were evaluated across all classes. (see Section \ref{sec:analyzing_predictions})
 
-\pagebreak
+A frequently used approach for multi-label classification is to plot confusion matrices to visualize the performance of our model and to identify which classes are often confused with each other. For this reason
+we have plotted the top 6 classes with the highest confusion rates using the formula:
+
+\begin{equation}
+1 - \frac{\text{TP} + \text{TN}}{\text{TP} + \text{FP} + \text{TN} + \text{FN}}
+\end{equation}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\linewidth]{cm.png}
+  \caption{Confusion Matrix for the Random Forest Classifier with MLC}
+  \label{fig6}
+\end{figure}
+
 \section{Analyzing Predictions}
 \label{sec:analyzing_predictions}
-After we have found the "best" hyperparameters, we trained our model on the full training set (see \ref{sec:data_split}). \\
+After we have found the "best" hyperparameters, we trained our model on the full training set (see Section \ref{sec:data_split}). \\
 At first the predictions of the model seemed pretty disappointing. The model did not capture different sound events or predicted the wrong labels. We assumed it would only work for simple examples:
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.75\linewidth]{702162_pred.png}
   \caption{702162.mp3: Ground Truth vs Prediction}
-  \label{fig3}
+  \label{fig7}
 \end{figure}
 
 The beep sounds in '702162.mp3' are clearly audible and it's a pretty unique sound. So we would expect the model to be able to capture this kind of sound event and indeed the predictions are pretty accurate. \\
@@ -134,7 +184,7 @@ However, after further investigation and comparing the true annotations with our
   \centering
   \includegraphics[width=0.6\linewidth]{686428_pred.png}
   \caption{686428.mp3: Ground Truth vs Prediction}
-  \label{fig4}
+  \label{fig8}
 \end{figure}
 
 Despite the fact that the model misses the first occurences of the meowing cat, it captured the talking person very accurately. When we listen to the audio file, we can clearly hear the person laughing at around 16s. This was captured by our model, but was described as 'speech' by the annotator. 
@@ -143,7 +193,7 @@ Despite the fact that the model misses the first occurences of the meowing cat, 
   \centering
   \includegraphics[width=0.6\linewidth]{517392_pred.png}
   \caption{517392.mp3: Ground Truth vs Prediction}
-  \label{fig5}
+  \label{fig9}
 \end{figure}
 
 This time, the Ground Truth label is completely wrong. The file definitely contains the sound of a passing train, which was correctly identified by the model. \\
